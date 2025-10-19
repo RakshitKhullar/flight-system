@@ -6,17 +6,48 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
 
 ### High-Level Design
 
-![Flight Booking System Architecture](docs/images/flight-system-hld.png)
+```
+                                    Flight Booking System Architecture
+                                    
+    ┌─────────┐     ┌─────────────────────────────────┐     ┌─────────────────────┐
+    │ Client  │────▶│                                 │────▶│       Users         │────▶ PostgreSQL
+    │         │     │                                 │     │     Service         │      Database
+    └─────────┘     │                                 │     └─────────────────────┘
+                    │                                 │
+    ┌─────────┐     │    Load Balancer & API Gateway │     ┌─────────────────────┐
+    │ Client  │────▶│                                 │────▶│      Search         │────▶ Elasticsearch
+    │         │     │    • Authentication             │     │     Service         │          │
+    └─────────┘     │    • Internal Routing           │     └─────────────────────┘          │
+                    │    • Rate Limiting              │              │                       │
+    ┌─────────┐     │                                 │              ▼                       │
+    │ Client  │────▶│                                 │     ┌─────────────────────┐          │
+    │         │     └─────────────────────────────────┘     │    Book Tickets     │          │
+    └─────────┘                                             │      Service        │          │
+                                                            └─────────────────────┘          │
+                                                                     │                       │
+                                                                     ▼                       │
+                                                            ┌─────────────────────┐          │
+                                                            │  Payment Gateway    │          │
+                                                            └─────────────────────┘          │
+                                                                                             │
+    Databases & Cache:                                                                       │
+    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                     │
+    │ PostgreSQL  │  │   Redis     │  │ Cassandra   │  │     CDC     │◀────────────────────┘
+    │   Tables    │  │   (TTL)     │  │ (Flights,   │  │ Change Data │
+    │             │  │             │  │ Schedule,   │  │  Capture    │
+    └─────────────┘  └─────────────┘  │  Seats)     │  └─────────────┘
+                                      └─────────────┘
+```
 
 **📋 Architecture Overview:**
 The system follows a **microservices architecture** with the following components:
 
-- **Load Balancer & API Gateway** → Routes client requests
-- **Users Service** → User management (PostgreSQL)
-- **Search Service** → Flight search (Elasticsearch) 
-- **Book Tickets Service** → Reservations (Redis + Cassandra + PostgreSQL)
-- **Payment Gateway** → External payment processing
-- **CDC** → Change Data Capture for synchronization
+- **Load Balancer & API Gateway** → Routes client requests, handles authentication, internal routing, and rate limiting
+- **Users Service** → User management and authentication (PostgreSQL)
+- **Search Service** → Flight search and filtering (Elasticsearch) 
+- **Book Tickets Service** → Multi-stop reservations (Redis + Cassandra + PostgreSQL)
+- **Payment Gateway** → External payment processing integration
+- **CDC** → Change Data Capture for real-time data synchronization
 
 ### Service Architecture
 ```
