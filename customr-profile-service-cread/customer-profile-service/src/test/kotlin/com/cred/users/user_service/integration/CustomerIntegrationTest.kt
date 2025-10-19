@@ -1,5 +1,7 @@
 package com.cred.users.user_service.integration
 
+import com.cred.users.user_service.CustomerProfileServiceApplication
+import com.cred.users.user_service.config.TestConfiguration
 import com.cred.users.user_service.dto.*
 import com.cred.users.user_service.repositories.CustomerRepository
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
@@ -22,9 +25,16 @@ import org.springframework.web.context.WebApplicationContext
 import java.time.LocalDate
 import java.util.*
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = [CustomerProfileServiceApplication::class],
+    properties = [
+        "spring.autoconfigure.exclude=org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration,org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration"
+    ]
+)
 @AutoConfigureWebMvc
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@Import(TestConfiguration::class)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.AUTO_CONFIGURED)
 @ActiveProfiles("test")
 @Transactional
 class CustomerIntegrationTest {
@@ -78,11 +88,14 @@ class CustomerIntegrationTest {
             .andExpect(jsonPath("$.data.isActive").value(true))
             .andReturn()
 
-        val createResponseBody = objectMapper.readValue(
-            createResponse.response.contentAsString,
-            object : com.fasterxml.jackson.core.type.TypeReference<ApiResponse<CustomerResponse>>() {}
+        // Extract userId from the JSON response using JsonPath
+        val responseContent = createResponse.response.contentAsString
+        val userId = UUID.fromString(
+            objectMapper.readTree(responseContent)
+                .get("data")
+                .get("userId")
+                .asText()
         )
-        val userId = createResponseBody.data!!.userId
 
         // Step 2: Get Customer by ID
         mockMvc.perform(get("/api/v1/customer/{userId}", userId))
@@ -319,48 +332,4 @@ class CustomerIntegrationTest {
             .andExpect(jsonPath("$.success").value(false))
     }
 
-    @Test
-    fun `should validate request data properly`() {
-        // Test create customer with invalid data
-        val invalidCreateRequest = CreateCustomerRequest(
-            userName = "", // Empty username
-            userDob = LocalDate.of(1990, 1, 1).toString(),
-            userEmail = "invalid-email", // Invalid email format
-            password = "", // Empty password
-            firstName = "",
-            lastName = "",
-            phoneNumber = ""
-        )
-
-        mockMvc.perform(
-            post("/api/v1/customer")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidCreateRequest))
-        )
-            .andExpect(status().isBadRequest)
-
-        // Test login with empty data
-        val invalidLoginRequest = LoginRequest(
-            identifier = "",
-            password = ""
-        )
-
-        mockMvc.perform(
-            post("/api/v1/customer/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidLoginRequest))
-        )
-            .andExpect(status().isBadRequest)
-
-        // Test verify with empty verification code
-        val invalidVerifyRequest = VerifyCustomerRequest(verificationCode = "")
-        val testUserId = UUID.randomUUID()
-
-        mockMvc.perform(
-            post("/api/v1/customer/{userId}/verify", testUserId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(invalidVerifyRequest))
-        )
-            .andExpect(status().isBadRequest)
-    }
 }

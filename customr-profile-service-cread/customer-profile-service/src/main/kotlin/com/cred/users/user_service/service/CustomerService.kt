@@ -199,8 +199,10 @@ class CustomerService(
         
         // Try to find customer by username or email
         val customer = customerRepository.findByUserName(request.identifier)
-            .orElse(customerRepository.findByUserEmail(request.identifier)
-                .orElseThrow { NoSuchElementException("Customer not found") })
+            .orElseGet { 
+                customerRepository.findByUserEmail(request.identifier)
+                    .orElseThrow { NoSuchElementException("Customer not found") }
+            }
         
         // Verify password
         if (!passwordUtils.verifyPassword(request.password, customer.password)) {

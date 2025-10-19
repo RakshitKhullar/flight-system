@@ -47,6 +47,7 @@ class CustomerServiceTest {
 
     @BeforeEach
     fun setUp() {
+        clearAllMocks()
         customerRepository = mockk()
         metrics = mockk(relaxed = true)
         passwordUtils = mockk()
@@ -61,8 +62,8 @@ class CustomerServiceTest {
             userDob = LocalDate.of(1995, 5, 15).toString(),
             userEmail = "newuser@example.com",
             password = "password123",
-            firstName = "Jane",
-            lastName = "Smith",
+            firstName = "John",
+            lastName = "Doe",
             phoneNumber = "+9876543210",
             address = "456 New St",
             city = "New City",
@@ -264,9 +265,14 @@ class CustomerServiceTest {
             password = "password123"
         )
 
-        every { customerRepository.findByUserName(loginRequest.identifier) } returns Optional.of(testCustomer)
-        every { customerRepository.findByUserEmail(loginRequest.identifier) } returns Optional.empty()
-        every { passwordUtils.verifyPassword(loginRequest.password, testCustomer.password) } returns true
+        // Clear any previous mocks and set up fresh ones
+        clearMocks(customerRepository, passwordUtils, metrics)
+        
+        // Mock the repository calls
+        every { customerRepository.findByUserName("testuser") } returns Optional.of(testCustomer)
+        every { customerRepository.findByUserEmail("testuser") } returns Optional.empty()
+        every { passwordUtils.verifyPassword("password123", "encrypted_password") } returns true
+        every { metrics.incrementUserLogin() } just Runs
 
         // When
         val result = customerService.loginCustomer(loginRequest)
@@ -275,10 +281,14 @@ class CustomerServiceTest {
         assertNotNull(result)
         assertEquals(testCustomer.userId, result.userId)
         assertEquals(testCustomer.userName, result.userName)
+        assertEquals(testCustomer.userEmail, result.userEmail)
+        assertEquals(testCustomer.firstName, result.firstName)
+        assertEquals(testCustomer.lastName, result.lastName)
         
-        verify { customerRepository.findByUserName(loginRequest.identifier) }
-        verify { passwordUtils.verifyPassword(loginRequest.password, testCustomer.password) }
-        verify { metrics.incrementUserLogin() }
+        // Verify the calls were made
+        verify(exactly = 1) { customerRepository.findByUserName("testuser") }
+        verify(exactly = 1) { passwordUtils.verifyPassword("password123", "encrypted_password") }
+        verify(exactly = 1) { metrics.incrementUserLogin() }
     }
 
     @Test
@@ -315,9 +325,14 @@ class CustomerServiceTest {
             password = "wrongpassword"
         )
 
-        every { customerRepository.findByUserName(loginRequest.identifier) } returns Optional.of(testCustomer)
-        every { customerRepository.findByUserEmail(loginRequest.identifier) } returns Optional.empty()
-        every { passwordUtils.verifyPassword(loginRequest.password, testCustomer.password) } returns false
+        // Clear any previous mocks and set up fresh ones
+        clearMocks(customerRepository, passwordUtils, metrics)
+        
+        // Mock the repository calls with explicit values
+        // The service calls findByUserName first, then findByUserEmail if first fails
+        every { customerRepository.findByUserName("testuser") } returns Optional.of(testCustomer)
+        every { customerRepository.findByUserEmail(any()) } returns Optional.empty()
+        every { passwordUtils.verifyPassword("wrongpassword", "encrypted_password") } returns false
 
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
@@ -325,7 +340,7 @@ class CustomerServiceTest {
         }
         
         assertEquals("Invalid credentials", exception.message)
-        verify { passwordUtils.verifyPassword(loginRequest.password, testCustomer.password) }
+        verify(exactly = 1) { passwordUtils.verifyPassword("wrongpassword", "encrypted_password") }
     }
 
     @Test
@@ -338,9 +353,14 @@ class CustomerServiceTest {
         
         val inactiveCustomer = testCustomer.copy(isActive = false)
 
-        every { customerRepository.findByUserName(loginRequest.identifier) } returns Optional.of(inactiveCustomer)
-        every { customerRepository.findByUserEmail(loginRequest.identifier) } returns Optional.empty()
-        every { passwordUtils.verifyPassword(loginRequest.password, inactiveCustomer.password) } returns true
+        // Clear any previous mocks and set up fresh ones
+        clearMocks(customerRepository, passwordUtils, metrics)
+        
+        // Mock the repository calls with explicit values
+        // The service calls findByUserName first, then findByUserEmail if first fails
+        every { customerRepository.findByUserName("testuser") } returns Optional.of(inactiveCustomer)
+        every { customerRepository.findByUserEmail(any()) } returns Optional.empty()
+        every { passwordUtils.verifyPassword("password123", "encrypted_password") } returns true
 
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
@@ -348,6 +368,7 @@ class CustomerServiceTest {
         }
         
         assertEquals("Customer account is deactivated", exception.message)
+        verify(exactly = 1) { passwordUtils.verifyPassword("password123", "encrypted_password") }
     }
 
     @Test

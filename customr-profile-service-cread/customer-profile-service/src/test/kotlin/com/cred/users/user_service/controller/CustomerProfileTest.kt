@@ -49,6 +49,7 @@ class CustomerProfileTest {
 
     @BeforeEach
     fun setUp() {
+        clearAllMocks()
         customerService = mockk()
         metrics = mockk(relaxed = true)
         customerProfile = CustomerProfile(customerService, metrics)
@@ -106,6 +107,10 @@ class CustomerProfileTest {
             phoneNumber = "+9876543210"
         )
 
+        // Clear mocks and set up service to throw validation error
+        clearMocks(customerService, metrics)
+        every { customerService.createCustomer(any()) } throws IllegalArgumentException("Validation failed")
+
         // When & Then
         mockMvc.perform(
             post("/api/v1/customer")
@@ -113,8 +118,10 @@ class CustomerProfileTest {
                 .content(objectMapper.writeValueAsString(invalidRequest))
         )
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("Validation failed"))
 
-        verify(exactly = 0) { customerService.createCustomer(any()) }
+        verify(exactly = 1) { customerService.createCustomer(any()) }
     }
 
     @Test

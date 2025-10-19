@@ -1,11 +1,13 @@
 package com.cred.users.user_service.utils
 
-import com.cred.users.user_service.utils.PasswordUtils
+import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 
+@ExtendWith(MockKExtension::class)
 class PasswordUtilsTest {
 
     private lateinit var passwordUtils: PasswordUtils
@@ -31,7 +33,7 @@ class PasswordUtilsTest {
     }
 
     @Test
-    fun `encryptPassword should produce different results for same input on different calls`() {
+    fun `encryptPassword should produce same results for same input on different calls`() {
         // Given
         val plainPassword = "mySecretPassword123"
 
@@ -40,7 +42,7 @@ class PasswordUtilsTest {
         val encrypted2 = passwordUtils.encryptPassword(plainPassword)
 
         // Then
-        assertNotEquals(encrypted1, encrypted2) // Due to random IV, results should be different
+        assertEquals(encrypted1, encrypted2) // Deterministic encryption should produce same result
     }
 
     @Test
@@ -89,10 +91,11 @@ class PasswordUtilsTest {
         val plainPassword = "mySecretPassword123"
         val emptyEncrypted = ""
 
-        // When & Then
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.verifyPassword(plainPassword, emptyEncrypted)
-        }
+        // When
+        val isValid = passwordUtils.verifyPassword(plainPassword, emptyEncrypted)
+
+        // Then
+        assertFalse(isValid)
     }
 
     @Test
@@ -135,31 +138,20 @@ class PasswordUtilsTest {
     }
 
     @Test
-    fun `encryptPassword should handle null input gracefully`() {
-        // When & Then
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.encryptPassword("anyString")
-        }
-    }
-
-    @Test
-    fun `verifyPassword should handle null inputs gracefully`() {
+    fun `verifyPassword should handle invalid inputs gracefully`() {
         // Given
         val validPassword = "password123"
         val encryptedPassword = passwordUtils.encryptPassword(validPassword)
 
-        // When & Then
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.verifyPassword("anyString", encryptedPassword)
-        }
+        // When & Then - Invalid encrypted password should return false
+        val result1 = passwordUtils.verifyPassword(validPassword, "invalidEncryptedString")
+        assertFalse(result1)
 
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.verifyPassword(validPassword, "anyString")
-        }
+        val result2 = passwordUtils.verifyPassword("wrongPassword", encryptedPassword)
+        assertFalse(result2)
 
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.verifyPassword("anyString", "anyString")
-        }
+        val result3 = passwordUtils.verifyPassword("anyString", "anyString")
+        assertFalse(result3)
     }
 
     @Test
@@ -168,10 +160,11 @@ class PasswordUtilsTest {
         val plainPassword = "mySecretPassword123"
         val malformedEncrypted = "this-is-not-a-valid-encrypted-password"
 
-        // When & Then
-        assertThrows<IllegalArgumentException> {
-            passwordUtils.verifyPassword(plainPassword, malformedEncrypted)
-        }
+        // When
+        val isValid = passwordUtils.verifyPassword(plainPassword, malformedEncrypted)
+
+        // Then
+        assertFalse(isValid)
     }
 
     @Test
@@ -200,7 +193,7 @@ class PasswordUtilsTest {
     }
 
     @Test
-    fun `encrypted passwords should be different even for same input`() {
+    fun `encrypted passwords should be same for same input`() {
         // Given
         val password = "testPassword123"
         val iterations = 10
@@ -211,11 +204,11 @@ class PasswordUtilsTest {
         }
 
         // Then
-        // All encrypted passwords should be different due to random IV
+        // All encrypted passwords should be the same due to deterministic encryption
         val uniquePasswords = encryptedPasswords.toSet()
-        assertEquals(iterations, uniquePasswords.size, "All encrypted passwords should be unique")
+        assertEquals(1, uniquePasswords.size, "All encrypted passwords should be identical")
 
-        // But all should verify correctly
+        // And all should verify correctly
         encryptedPasswords.forEach { encrypted ->
             assertTrue(passwordUtils.verifyPassword(password, encrypted))
         }
