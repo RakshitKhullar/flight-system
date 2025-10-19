@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="1" author="user-service">
+        <comment>Create customer table with all required fields</comment>
+        
+        <createTable tableName="customer">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="user_name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="user_dob" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone_number" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="address" type="VARCHAR(500)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="city" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="postal_code" type="VARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="verification_code" type="VARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="verification_code_expiry" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="user-service">
+        <comment>Create indexes for better performance</comment>
+        
+        <createIndex indexName="idx_customer_user_id" tableName="customer">
+            <column name="user_id"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_customer_user_name" tableName="customer">
+            <column name="user_name"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_customer_user_email" tableName="customer">
+            <column name="user_email"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_customer_phone_number" tableName="customer">
+            <column name="phone_number"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_customer_is_active" tableName="customer">
+            <column name="is_active"/>
+        </createIndex>
+        
+        <createIndex indexName="idx_customer_is_verified" tableName="customer">
+            <column name="is_verified"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="3" author="user-service">
+        <comment>Create function and trigger for automatic updated_at update</comment>
+        
+        <sql dbms="postgresql">
+            CREATE OR REPLACE FUNCTION update_updated_at_column()
+            RETURNS TRIGGER AS '
+            BEGIN
+                NEW.updated_at = CURRENT_TIMESTAMP;
+                RETURN NEW;
+            END;
+            ' LANGUAGE 'plpgsql';
+        </sql>
+        
+        <sql dbms="postgresql">
+            CREATE TRIGGER update_customer_updated_at 
+                BEFORE UPDATE ON customer 
+                FOR EACH ROW 
+                EXECUTE FUNCTION update_updated_at_column();
+        </sql>
+        
+        <rollback>
+            DROP TRIGGER IF EXISTS update_customer_updated_at ON customer;
+            DROP FUNCTION IF EXISTS update_updated_at_column();
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

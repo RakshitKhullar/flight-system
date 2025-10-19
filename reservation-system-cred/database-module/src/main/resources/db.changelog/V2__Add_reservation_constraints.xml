@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="3" author="reservation-system">
+        <comment>Add foreign key constraint from payment_transactions to tickets</comment>
+        <addForeignKeyConstraint
+            baseTableName="payment_transactions"
+            baseColumnNames="ticket_id"
+            constraintName="fk_payment_transactions_ticket_id"
+            referencedTableName="tickets"
+            referencedColumnNames="ticket_id"
+            onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="4" author="reservation-system">
+        <comment>Add indexes for better query performance</comment>
+        <createIndex tableName="tickets" indexName="idx_tickets_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="tickets" indexName="idx_tickets_pnr_number">
+            <column name="pnr_number"/>
+        </createIndex>
+        <createIndex tableName="tickets" indexName="idx_tickets_booking_status">
+            <column name="booking_status"/>
+        </createIndex>
+        <createIndex tableName="tickets" indexName="idx_tickets_created_at">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="5" author="reservation-system">
+        <comment>Add indexes for payment_transactions table</comment>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_transactions_ticket_id">
+            <column name="ticket_id"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_transactions_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_transactions_created_at">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reservation_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
+    driver-class-name: org.postgresql.Driver
+    
+  liquibase:
+    change-log: classpath:db.changelog/db.changelog-master.xml
+    enabled: true
+    drop-first: false
+    default-schema: public
+    
+        
+logging:
+  level:
+    liquibase: DEBUG
+    liquibase.changelog: DEBUG
+    liquibase.database: DEBUG
+    org.springframework.boot.autoconfigure.liquibase: DEBUG
+    com.cred.users.database: DEBUG

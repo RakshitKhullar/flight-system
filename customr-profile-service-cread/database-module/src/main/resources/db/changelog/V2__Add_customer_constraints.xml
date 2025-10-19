@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="4" author="user-service">
+        <comment>Add email format validation constraint</comment>
+        
+        <sql dbms="postgresql">
+            ALTER TABLE customer 
+            ADD CONSTRAINT chk_customer_email_format 
+            CHECK (user_email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+        </sql>
+        
+        <rollback>
+            ALTER TABLE customer DROP CONSTRAINT IF EXISTS chk_customer_email_format;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="5" author="user-service">
+        <comment>Add phone number format validation constraint</comment>
+        
+        <sql dbms="postgresql">
+            ALTER TABLE customer 
+            ADD CONSTRAINT chk_customer_phone_format 
+            CHECK (phone_number ~* '^\+?[1-9]\d{1,14}$');
+        </sql>
+        
+        <rollback>
+            ALTER TABLE customer DROP CONSTRAINT IF EXISTS chk_customer_phone_format;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="6" author="user-service">
+        <comment>Add name validation constraints</comment>
+        
+        <sql dbms="postgresql">
+            ALTER TABLE customer 
+            ADD CONSTRAINT chk_customer_names_not_empty 
+            CHECK (LENGTH(TRIM(first_name)) &gt; 0 AND LENGTH(TRIM(last_name)) &gt; 0);
+        </sql>
+        
+        <rollback>
+            ALTER TABLE customer DROP CONSTRAINT IF EXISTS chk_customer_names_not_empty;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="7" author="user-service">
+        <comment>Add username length validation constraint</comment>
+        
+        <sql dbms="postgresql">
+            ALTER TABLE customer 
+            ADD CONSTRAINT chk_customer_username_length 
+            CHECK (LENGTH(user_name) &gt;= 3 AND LENGTH(user_name) &lt;= 50);
+        </sql>
+        
+        <rollback>
+            ALTER TABLE customer DROP CONSTRAINT IF EXISTS chk_customer_username_length;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="8" author="user-service">
+        <comment>Add table and column comments</comment>
+        
+        <sql dbms="postgresql">
+            COMMENT ON TABLE customer IS 'Customer information table for user service';
+        </sql>
+        
+        <sql dbms="postgresql">
+            COMMENT ON COLUMN customer.id IS 'Primary key - auto incrementing ID';
+            COMMENT ON COLUMN customer.user_id IS 'Unique UUID for the customer';
+            COMMENT ON COLUMN customer.user_name IS 'Unique username for login';
+            COMMENT ON COLUMN customer.user_dob IS 'Date of birth in string format';
+            COMMENT ON COLUMN customer.user_email IS 'Unique email address';
+            COMMENT ON COLUMN customer.password IS 'Encrypted password';
+            COMMENT ON COLUMN customer.verification_code IS 'Email verification code';
+            COMMENT ON COLUMN customer.verification_code_expiry IS 'Expiry time for verification code';
+            COMMENT ON COLUMN customer.is_verified IS 'Whether email is verified';
+            COMMENT ON COLUMN customer.is_active IS 'Whether account is active (soft delete flag)';
+            COMMENT ON COLUMN customer.created_at IS 'Record creation timestamp';
+            COMMENT ON COLUMN customer.updated_at IS 'Record last update timestamp';
+        </sql>
+        
+        <rollback>
+            <sql dbms="postgresql">
+                COMMENT ON TABLE customer IS NULL;
+                COMMENT ON COLUMN customer.id IS NULL;
+                COMMENT ON COLUMN customer.user_id IS NULL;
+                COMMENT ON COLUMN customer.user_name IS NULL;
+                COMMENT ON COLUMN customer.user_dob IS NULL;
+                COMMENT ON COLUMN customer.user_email IS NULL;
+                COMMENT ON COLUMN customer.password IS NULL;
+                COMMENT ON COLUMN customer.verification_code IS NULL;
+                COMMENT ON COLUMN customer.verification_code_expiry IS NULL;
+                COMMENT ON COLUMN customer.is_verified IS NULL;
+                COMMENT ON COLUMN customer.is_active IS NULL;
+                COMMENT ON COLUMN customer.created_at IS NULL;
+                COMMENT ON COLUMN customer.updated_at IS NULL;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

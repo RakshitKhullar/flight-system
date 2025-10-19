@@ -1,0 +1,108 @@
+server:
+  port:  ${SERVER_PORT:8090}
+  servlet:
+    context-path: /customer-profile-service
+  tomcat:
+    mbeanregistry:
+      enabled: true
+  compression:
+    enabled: ${CPS_ENABLE_GZIP_COMPRESSION:true}
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: ${CPS_GZIP_MIN_RESPONSE_SIZE:1024}
+
+spring:
+  application:
+    name: customer-profile-service
+  
+  # Database Configuration
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    driver-class-name: ${DATABASE_DRIVER:org.h2.Driver}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:true}
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.H2Dialect}
+  
+  # H2 Console (for development)
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
+
+# Management and Actuator Configuration
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:4001}
+  
+  endpoint:
+    metrics:
+      enabled: true
+    health:
+      enabled: true
+      show-details: always
+      show-components: always
+    info:
+      enabled: true
+    prometheus:
+      enabled: true
+    beans:
+      enabled: true
+    env:
+      enabled: true
+    configprops:
+      enabled: true
+    loggers:
+      enabled: true
+    threaddump:
+      enabled: true
+    heapdump:
+      enabled: true
+  
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,beans,env,configprops,loggers,threaddump,heapdump
+      base-path: /actuator
+      cors:
+        allowed-origins: "*"
+        allowed-methods: GET,POST
+  
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        descriptions: true
+        step: 1m
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+      percentiles:
+        "[http.server.requests]": 0.5, 0.95, 0.99
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:development}
+
+# Logging Configuration
+logging:
+  level:
+    com.cred.users.user_service: ${LOG_LEVEL_APP:INFO}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_SQL_PARAMS:WARN}
+    io.micrometer: ${LOG_LEVEL_MICROMETER:INFO}
+  
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  
+  file:
+    name: ${LOG_FILE_PATH:logs/user-service.log}
+

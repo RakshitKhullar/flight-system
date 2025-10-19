@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="6" author="reservation-system">
+        <comment>Create booking_audit table for tracking booking changes</comment>
+        <createTable tableName="booking_audit">
+            <column name="audit_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ticket_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="old_status" type="VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="new_status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="changed_by" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="change_reason" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="7" author="reservation-system">
+        <comment>Create seat_booking_cache table for managing seat blocking</comment>
+        <createTable tableName="seat_booking_cache">
+            <column name="cache_id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="seat_key" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="flight_id" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="seat_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="flight_time" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="blocked_by" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="blocked_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="8" author="reservation-system">
+        <comment>Add foreign key constraints and indexes for new tables</comment>
+        <addForeignKeyConstraint
+            baseTableName="booking_audit"
+            baseColumnNames="ticket_id"
+            constraintName="fk_booking_audit_ticket_id"
+            referencedTableName="tickets"
+            referencedColumnNames="ticket_id"
+            onDelete="CASCADE"/>
+        
+        <createIndex tableName="booking_audit" indexName="idx_booking_audit_ticket_id">
+            <column name="ticket_id"/>
+        </createIndex>
+        <createIndex tableName="booking_audit" indexName="idx_booking_audit_created_at">
+            <column name="created_at"/>
+        </createIndex>
+        
+        <createIndex tableName="seat_booking_cache" indexName="idx_seat_booking_cache_seat_key">
+            <column name="seat_key"/>
+        </createIndex>
+        <createIndex tableName="seat_booking_cache" indexName="idx_seat_booking_cache_flight_id">
+            <column name="flight_id"/>
+        </createIndex>
+        <createIndex tableName="seat_booking_cache" indexName="idx_seat_booking_cache_expires_at">
+            <column name="expires_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
