@@ -575,9 +575,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 ### Documentation
-- [Multi-Stop Flight Booking Guide](docs/MULTI_STOP_BOOKING.md)
-- [Redis Setup Guide](REDIS_SETUP.md)
-- [API Documentation](docs/API.md)
+- [Multi-Stop Flight Booking Guide](https://docs.google.com/document/d/1MAfipgyvYKFNaraeuLHxXzXbUzTpnVV-0WVVa3uI-Y0/edit?tab=t.0)
 
 ### Contact
 - **Email**: rakshitkhullar1331@gmail.com
