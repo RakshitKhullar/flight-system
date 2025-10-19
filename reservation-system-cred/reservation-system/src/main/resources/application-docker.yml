@@ -1,0 +1,125 @@
+spring:
+  cassandra:
+    keyspace-name: ${CASSANDRA_KEYSPACE:reservation_system}
+    contact-points: ${CASSANDRA_CONTACT_POINTS:cassandra}
+    port: ${CASSANDRA_PORT:9042}
+    local-datacenter: ${CASSANDRA_DATACENTER:datacenter1}
+    schema-action: create-if-not-exists
+    request:
+      timeout: 10s
+      consistency: LOCAL_QUORUM
+    connection:
+      connect-timeout: 10s
+      init-query-timeout: 10s
+  
+  # PostgreSQL configuration for JPA entities
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://postgres:5432/reservation_db}
+    username: ${DB_USERNAME:reservation_user}
+    password: ${DB_PASSWORD:reservation_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  # Redis configuration
+  redis:
+    host: ${REDIS_HOST:redis}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    jedis:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 2
+        max-wait: 2000ms
+    connect-timeout: 10s
+    command-timeout: 5s
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 20000
+    max-connections: 8192
+
+# Actuator and Metrics Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+    tags:
+      application: reservation-system
+      environment: docker
+      service: reservation-system
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms
+
+# Logging configuration for containerized environment
+logging:
+  level:
+    com.reservation.service: INFO
+    org.springframework.data.cassandra: WARN
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%logger{36}] - %msg%n"
+  file:
+    name: /app/logs/reservation-system.log
+    max-size: 100MB
+    max-history: 30
+
+# Custom application properties
+app:
+  booking:
+    cache:
+      ttl-minutes: 10
+      max-retry-attempts: 3
+      retry-delay-ms: 100
+  metrics:
+    enabled: true
+  security:
+    jwt:
+      enabled: false # Enable when JWT is implemented
+  performance:
+    async:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 100
