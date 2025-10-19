@@ -5,9 +5,19 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
 ## 🏗️ System Architecture
 
 ### High-Level Design
-![Flight Booking System Architecture](docs/images/flight-system-hld.png)
 
+<!-- Add your HLD diagram image here -->
+<!-- ![Flight Booking System Architecture](docs/images/flight-system-hld.png) -->
+
+**📋 Architecture Overview:**
 The system follows a **microservices architecture** with the following components:
+
+- **Load Balancer & API Gateway** → Routes client requests
+- **Users Service** → User management (PostgreSQL)
+- **Search Service** → Flight search (Elasticsearch) 
+- **Book Tickets Service** → Reservations (Redis + Cassandra + PostgreSQL)
+- **Payment Gateway** → External payment processing
+- **CDC** → Change Data Capture for synchronization
 
 ### Service Architecture
 ```
@@ -90,20 +100,25 @@ The system follows a **microservices architecture** with the following component
 
 ```
 flight-system/
-├── docs/
-│   └── images/
-│       └── flight-system-hld.png          # Add your HLD diagram here
-├── customer-profile-service-cred/
+├── docs/                                   # Documentation
+│   └── images/                            # Architecture diagrams
+│       └── flight-system-hld.png         # (Upload your HLD diagram here)
+├── customer-profile-service-cred/         # User Management Service
 │   └── customer-profile-service/
-├── travel-search-service-cred/
+├── travel-search-service-cred/            # Flight Search Service  
 │   └── travel-search-service/
-├── reservation-system-cred/
+├── reservation-system-cred/               # Core Booking Service
 │   └── reservation-system/
-├── docker-compose.yml
-└── README.md
+├── docker-compose.yml                     # Infrastructure setup
+└── README.md                              # This file
 ```
 
-> **📝 Note**: Please add your HLD diagram image to `docs/images/flight-system-hld.png` for the architecture section to display correctly.
+### 📸 **To Add Your HLD Diagram:**
+
+1. **Create folders**: `docs/images/` in your GitHub repo
+2. **Upload image**: Save your diagram as `flight-system-hld.png`
+3. **Uncomment**: Remove `<!-- -->` from line 10 in README
+4. **Result**: Your architecture diagram will display perfectly!
 
 ## 📋 Prerequisites
 
