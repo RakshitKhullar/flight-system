@@ -18,6 +18,21 @@ data class ScheduleItem(
     val seats: List<SeatInfo> = emptyList(),
     val totalSeats: Int = 0,
     val availableSeats: Int = 0,
+    val numberOfStops: Int = 0,
+    val stops: List<FlightStop> = emptyList(),
+    val isDirect: Boolean = numberOfStops == 0
+)
+
+@UserDefinedType("flight_stop")
+data class FlightStop(
+    val stopId: UUID = UUID.randomUUID(),
+    val airportCode: String,
+    val airportName: String,
+    val city: String,
+    val arrivalTime: LocalTime,
+    val departureTime: LocalTime,
+    val layoverDuration: Int, // in minutes
+    val stopSequence: Int // 1 for first stop, 2 for second stop, etc.
 )
 
 @UserDefinedType("seat_info")
@@ -41,7 +56,10 @@ data class AvailableSeat(
     val sourceCode: String,
     val destinationCode: String,
     val travelStartTime: LocalTime,
-    val travelEndTime: LocalTime
+    val travelEndTime: LocalTime,
+    val numberOfStops: Int = 0,
+    val stops: List<FlightStop> = emptyList(),
+    val isDirect: Boolean = numberOfStops == 0
 )
 
 enum class SeatStatus {
@@ -73,7 +91,10 @@ fun ScheduleItem.getAvailableSeats(): List<AvailableSeat> {
                 sourceCode = this.sourceCode,
                 destinationCode = this.destinationCode,
                 travelStartTime = this.travelStartTime,
-                travelEndTime = this.travelEndTime
+                travelEndTime = this.travelEndTime,
+                numberOfStops = this.numberOfStops,
+                stops = this.stops,
+                isDirect = this.isDirect
             )
         }
 }
@@ -84,5 +105,44 @@ fun ScheduleItem.getSeatsByStatus(status: SeatStatus): List<SeatInfo> {
 
 fun ScheduleItem.getSeatsByClass(seatClass: SeatClass): List<SeatInfo> {
     return seats.filter { it.seatClass == seatClass }
+}
+
+// Extension functions for stops
+fun ScheduleItem.getTotalTravelTime(): Int {
+    // Calculate total travel time in minutes including layovers
+    val directTravelTime = java.time.Duration.between(travelStartTime, travelEndTime).toMinutes().toInt()
+    return directTravelTime
+}
+
+fun ScheduleItem.getTotalLayoverTime(): Int {
+    return stops.sumOf { it.layoverDuration }
+}
+
+fun ScheduleItem.getStopsBySequence(): List<FlightStop> {
+    return stops.sortedBy { it.stopSequence }
+}
+
+fun ScheduleItem.hasStopInCity(city: String): Boolean {
+    return stops.any { it.city.equals(city, ignoreCase = true) }
+}
+
+fun ScheduleItem.hasStopAtAirport(airportCode: String): Boolean {
+    return stops.any { it.airportCode.equals(airportCode, ignoreCase = true) }
+}
+
+fun ScheduleItem.getFlightType(): FlightType {
+    return when (numberOfStops) {
+        0 -> FlightType.DIRECT
+        1 -> FlightType.ONE_STOP
+        2 -> FlightType.TWO_STOPS
+        else -> FlightType.MULTI_STOP
+    }
+}
+
+enum class FlightType {
+    DIRECT,
+    ONE_STOP,
+    TWO_STOPS,
+    MULTI_STOP
 }
 

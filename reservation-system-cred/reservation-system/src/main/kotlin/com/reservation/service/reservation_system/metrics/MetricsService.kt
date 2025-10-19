@@ -47,6 +47,14 @@ class MetricsService(private val meterRegistry: MeterRegistry) {
         .description("Count of API errors")
         .register(meterRegistry)
 
+    val flightCreatedCounter: Counter = Counter.builder("flight_reservation_flight_created_counter")
+        .description("Count of flights created")
+        .register(meterRegistry)
+
+    val flightCancelledCounter: Counter = Counter.builder("flight_reservation_flight_cancelled_counter")
+        .description("Count of flights cancelled")
+        .register(meterRegistry)
+
 
     // Metric functions - Simple and Clean
     fun incrementScheduleCreated() {
@@ -118,6 +126,22 @@ class MetricsService(private val meterRegistry: MeterRegistry) {
             apiErrorCounter.increment()
         } catch (e: Exception) {
             logger.error("Exception in API error counter", e)
+        }
+    }
+
+    fun incrementFlightCreated() {
+        try {
+            flightCreatedCounter.increment()
+        } catch (e: Exception) {
+            logger.error("Exception in flight created counter", e)
+        }
+    }
+
+    fun incrementFlightCancelled() {
+        try {
+            flightCancelledCounter.increment()
+        } catch (e: Exception) {
+            logger.error("Exception in flight cancelled counter", e)
         }
     }
 }

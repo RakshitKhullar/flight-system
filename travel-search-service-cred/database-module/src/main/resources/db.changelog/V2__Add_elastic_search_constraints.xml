@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="2" author="developer">
+        <!-- Add check constraint for maximumstops -->
+        <sql>
+            ALTER TABLE elastic_search ADD CONSTRAINT chk_maximumstops CHECK (maximumstops IN (0, 1, 2));
+        </sql>
+        
+        <!-- Create indexes for better query performance -->
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_flight_id">
+            <column name="flight_id"/>
+        </createIndex>
+        
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_source_destination">
+            <column name="source"/>
+            <column name="destination"/>
+        </createIndex>
+        
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_flightdate">
+            <column name="flightdate"/>
+        </createIndex>
+        
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_departner">
+            <column name="departner"/>
+        </createIndex>
+        
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_maximumstops">
+            <column name="maximumstops"/>
+        </createIndex>
+        
+        <!-- Create composite index for common search queries -->
+        <createIndex tableName="elastic_search" indexName="idx_elastic_search_search_combo">
+            <column name="source"/>
+            <column name="destination"/>
+            <column name="flightdate"/>
+            <column name="maximumstops"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="3" author="developer">
+        <!-- Create trigger function to automatically update updated_at timestamp -->
+        <sql>
+            CREATE OR REPLACE FUNCTION update_updated_at_column()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.updated_at = CURRENT_TIMESTAMP;
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql';
+        </sql>
+        
+        <!-- Create trigger -->
+        <sql>
+            CREATE TRIGGER update_elastic_search_updated_at 
+                BEFORE UPDATE ON elastic_search 
+                FOR EACH ROW 
+                EXECUTE FUNCTION update_updated_at_column();
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

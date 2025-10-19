@@ -9,4 +9,3 @@ class TravelSearchServiceApplication
 fun main(args: Array<String>) {
 	runApplication<TravelSearchServiceApplication>(*args)
 }
-

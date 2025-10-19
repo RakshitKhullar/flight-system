@@ -221,6 +221,111 @@ class BookingHandlerTest {
         verify { bookingService.getBookingDetails(bookingId, userId) }
     }
 
+    @Test
+    fun `should process segment booking successfully`() = runTest {
+        // Given - Segment booking from DEL to BOM
+        val segmentBookingRequest = createSegmentBookingRequest("DEL", "BOM")
+        val expectedTicket = createTicket()
+
+        every { seatKeyService.generateSeatKey(any<BookingDetails>()) } returns seatKey
+        every { seatBookingCacheService.isSeatBookingInProgress(seatKey) } returns false
+        every { seatBookingCacheService.blockSeatForBooking(seatKey) } returns true
+        every { seatBookingCacheService.releaseSeatBooking(seatKey) } just Runs
+        every { bookingServiceFactory.getService("FLIGHT") } returns bookingService
+        every { bookingService.bookTicket(any()) } returns expectedTicket
+
+        // When
+        val result = bookingHandler.processBooking(segmentBookingRequest)
+
+        // Then
+        assertNotNull(result)
+        assertEquals(expectedTicket.ticketId, result.ticketId)
+
+        verify { seatKeyService.generateSeatKey(any<BookingDetails>()) }
+        verify { seatBookingCacheService.isSeatBookingInProgress(seatKey) }
+        verify { seatBookingCacheService.blockSeatForBooking(seatKey) }
+        verify { bookingService.bookTicket(match { 
+            val details = it.bookingDetails as FlightBookingDetails
+            details.sourceCode == "DEL" && details.destinationCode == "BOM"
+        }) }
+        verify { seatBookingCacheService.releaseSeatBooking(seatKey) }
+    }
+
+    @Test
+    fun `should handle concurrent segment bookings with different routes`() = runTest {
+        // Given - Two different segment bookings
+        val segment1Request = createSegmentBookingRequest("DEL", "BOM")
+        val segment2Request = createSegmentBookingRequest("BOM", "BLR")
+        val expectedTicket = createTicket()
+
+        val seatKey1 = "FL123:$seatId:DEL:BOM"
+        val seatKey2 = "FL123:$seatId:BOM:BLR"
+
+        every { seatKeyService.generateSeatKey(any<BookingDetails>()) } returnsMany listOf(seatKey1, seatKey2)
+        every { seatBookingCacheService.isSeatBookingInProgress(any()) } returns false
+        every { seatBookingCacheService.blockSeatForBooking(any()) } returns true
+        every { seatBookingCacheService.releaseSeatBooking(any()) } just Runs
+        every { bookingServiceFactory.getService("FLIGHT") } returns bookingService
+        every { bookingService.bookTicket(any()) } returns expectedTicket
+
+        // When - Process both bookings
+        val result1 = bookingHandler.processBooking(segment1Request)
+        val result2 = bookingHandler.processBooking(segment2Request)
+
+        // Then - Both should succeed (non-overlapping segments)
+        assertNotNull(result1)
+        assertNotNull(result2)
+
+        verify(exactly = 2) { seatKeyService.generateSeatKey(any<BookingDetails>()) }
+        verify(exactly = 2) { seatBookingCacheService.blockSeatForBooking(any()) }
+        verify(exactly = 2) { bookingService.bookTicket(any()) }
+        verify(exactly = 2) { seatBookingCacheService.releaseSeatBooking(any()) }
+    }
+
+    @Test
+    fun `should handle segment booking failure with proper rollback`() = runTest {
+        // Given - Segment booking that will fail
+        val segmentBookingRequest = createSegmentBookingRequest("DEL", "BLR")
+        val segmentBookingException = IllegalStateException("Seat not available for segment")
+
+        every { seatKeyService.generateSeatKey(any<BookingDetails>()) } returns seatKey
+        every { seatBookingCacheService.isSeatBookingInProgress(seatKey) } returns false
+        every { seatBookingCacheService.blockSeatForBooking(seatKey) } returns true
+        every { seatBookingCacheService.releaseSeatBooking(seatKey) } just Runs
+        every { bookingServiceFactory.getService("FLIGHT") } returns bookingService
+        every { bookingService.bookTicket(any()) } throws segmentBookingException
+
+        // When & Then
+        val exception = assertThrows<IllegalStateException> {
+            bookingHandler.processBooking(segmentBookingRequest)
+        }
+
+        assertEquals("Seat not available for segment", exception.message)
+
+        verify { seatBookingCacheService.blockSeatForBooking(seatKey) }
+        verify { bookingService.bookTicket(any()) }
+        verify { seatBookingCacheService.releaseSeatBooking(seatKey) } // Rollback
+    }
+
+    private fun createSegmentBookingRequest(sourceCode: String, destinationCode: String): BookingRequest {
+        val flightDetails = FlightBookingDetails(
+            vehicleId = vehicleId,
+            flightStartTime = "10:00",
+            flightEndTime = "12:00",
+            seatId = seatId,
+            sourceCode = sourceCode,
+            destinationCode = destinationCode,
+            flightTime = "2h",
+            discountsApplied = emptyList()
+        )
+
+        return BookingRequest(
+            userId = userId,
+            bookingType = BookingType.FLIGHT,
+            bookingDetails = flightDetails
+        )
+    }
+
     private fun createFlightBookingRequest(): BookingRequest {
         val flightDetails = FlightBookingDetails(
             vehicleId = vehicleId,
