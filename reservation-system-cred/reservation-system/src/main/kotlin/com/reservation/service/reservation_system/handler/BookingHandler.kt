@@ -32,7 +32,14 @@ class BookingHandler(
         val bookingService = bookingServiceFactory.getService(bookingRequest.bookingType.name)
         return bookingService.bookTicket(bookingRequest)
     }
-    
+    /**
+     * we add the request with some key in the cache and then we check if the seat is already booked or not
+     * if the seat is not booked then we proceed with the booking else we throw an exception
+     *
+     * redis provide functionality to release an event when ttl is reached for the request
+     * currently that part is not covered in the scope
+     * have build a backdoor api to free data from cache and update the db as well with /unblock-seat in BookingStatusController controller
+     */
     private suspend fun processFlightBookingWithCache(bookingRequest: BookingRequest): Ticket {
         val bookingDetails = bookingRequest.bookingDetails
         
