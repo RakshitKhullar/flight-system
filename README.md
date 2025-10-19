@@ -6,8 +6,7 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
 
 ### High-Level Design
 
-<!-- Add your HLD diagram image here -->
-<!-- ![Flight Booking System Architecture](docs/images/flight-system-hld.png) -->
+![Flight Booking System Architecture](docs/images/flight-system-hld.png)
 
 **📋 Architecture Overview:**
 The system follows a **microservices architecture** with the following components:
