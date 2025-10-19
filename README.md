@@ -4,6 +4,12 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
 
 ## 🏗️ System Architecture
 
+### High-Level Design
+![Flight Booking System Architecture](docs/images/flight-system-hld.png)
+
+The system follows a **microservices architecture** with the following components:
+
+### Service Architecture
 ```
 ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
 │                     │    │                     │    │                     │
@@ -28,6 +34,40 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
                     └─────────────────────────────────┘
 ```
 
+### Architecture Components
+
+#### **Load Balancer & API Gateway**
+- **Authentication** - JWT token validation
+- **Internal Routing** - Service discovery and routing
+- **Rate Limiting** - API throttling and protection
+
+#### **Microservices**
+1. **Users Service** (Customer Profile)
+   - User registration and authentication
+   - Profile management
+   - **Database**: PostgreSQL
+
+2. **Search Service** (Travel Search)
+   - Flight search and filtering
+   - Route optimization
+   - **Database**: Elasticsearch + Cassandra
+
+3. **Book Tickets Service** (Reservation System)
+   - Multi-stop flight booking
+   - Segment-based seat management
+   - **Cache**: Redis (TTL-based)
+   - **Databases**: PostgreSQL + Cassandra
+
+#### **Data Layer**
+- **PostgreSQL** - User data, bookings, transactions
+- **Cassandra** - Flight schedules, seat inventory, high-volume data
+- **Redis** - Seat booking cache, session management
+- **Elasticsearch** - Flight search indexing
+
+#### **External Integration**
+- **Payment Gateway** - Secure payment processing
+- **CDC (Change Data Capture)** - Real-time data synchronization
+
 ## 🚀 Features
 
 ### Core Features
@@ -45,6 +85,25 @@ A comprehensive flight booking system built with **Spring Boot**, **Kotlin**, an
 - ✅ **Metrics & Monitoring** - Prometheus integration
 - ✅ **Containerized Deployment** - Docker support
 - ✅ **Comprehensive Testing** - Unit + Integration tests
+
+## 📁 Repository Structure
+
+```
+flight-system/
+├── docs/
+│   └── images/
+│       └── flight-system-hld.png          # Add your HLD diagram here
+├── customer-profile-service-cred/
+│   └── customer-profile-service/
+├── travel-search-service-cred/
+│   └── travel-search-service/
+├── reservation-system-cred/
+│   └── reservation-system/
+├── docker-compose.yml
+└── README.md
+```
+
+> **📝 Note**: Please add your HLD diagram image to `docs/images/flight-system-hld.png` for the architecture section to display correctly.
 
 ## 📋 Prerequisites
 
