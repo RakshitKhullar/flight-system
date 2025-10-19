@@ -12,6 +12,8 @@ interface ElasticSearchRepository : JpaRepository<ElasticSearch, Long> {
     
     fun findByFlightId(flightId: String): ElasticSearch?
     
+    fun findAllByFlightId(flightId: String): List<ElasticSearch>
+    
     fun findBySourceAndDestinationAndFlightDate(
         source: String, 
         destination: String, 
@@ -46,4 +48,16 @@ interface ElasticSearchRepository : JpaRepository<ElasticSearch, Long> {
     
     @Query("SELECT DISTINCT e.departner FROM ElasticSearch e WHERE e.departner IS NOT NULL ORDER BY e.departner")
     fun findAllDepartners(): List<String>
+    
+    @Query("SELECT e FROM ElasticSearch e WHERE e.flightId = :flightId AND e.source = :source " +
+           "AND e.destination = :destination AND e.flightDate = :flightDate " +
+           "AND e.maximumStops = :maximumStops AND (:departner IS NULL OR e.departner = :departner)")
+    fun findByFlightIdAndCriteria(
+        @Param("flightId") flightId: String,
+        @Param("source") source: String,
+        @Param("destination") destination: String,
+        @Param("flightDate") flightDate: LocalDate,
+        @Param("maximumStops") maximumStops: Int,
+        @Param("departner") departner: String?
+    ): ElasticSearch?
 }

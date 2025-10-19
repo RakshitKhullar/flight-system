@@ -1,0 +1,66 @@
+# Development Override for Docker Compose
+# This file is automatically loaded by docker-compose and overrides settings in docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Development specific overrides for travel-search-service
+  travel-search-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker,dev
+      LOGGING_LEVEL_COM_TRAVEL_SEARCH: DEBUG
+      SPRING_JPA_SHOW_SQL: true
+    volumes:
+      # Mount source code for hot reload (if using spring-boot-devtools)
+      - ./travel-search-service-cred/travel-search-service/src:/app/src
+      # Mount logs directory
+      - ./logs:/app/logs
+    ports:
+      # Expose debug port
+      - "5005:5005"
+    command: >
+      java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+      -jar /app/app.jar
+
+  # Development database with exposed ports and volumes
+  postgres:
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount init scripts
+      - ./database-module/src/main/resources/db/init:/docker-entrypoint-initdb.d
+      # Mount data directory for persistence
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: flight_search_db_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+
+  # Development Redis with persistence
+  redis:
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server --appendonly yes
+
+  # Remove production services in development
+  nginx:
+    profiles:
+      - production
+
+  prometheus:
+    profiles:
+      - monitoring
+
+  grafana:
+    profiles:
+      - monitoring
+
+  elasticsearch:
+    profiles:
+      - search
+
+  kibana:
+    profiles:
+      - search
