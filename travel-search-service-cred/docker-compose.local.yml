@@ -1,0 +1,69 @@
+# Local Development Docker Compose
+# Use this for local development with hot reload
+
+version: '3.8'
+
+services:
+  # Local PostgreSQL for development
+  postgres-local:
+    image: postgres:15-alpine
+    container_name: flight-search-postgres-local
+    environment:
+      POSTGRES_DB: flight_search_local
+      POSTGRES_USER: local_user
+      POSTGRES_PASSWORD: local_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+      - ./database-module/src/main/resources/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - local-network
+
+  # Local Redis for development
+  redis-local:
+    image: redis:7-alpine
+    container_name: flight-search-redis-local
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_local_data:/data
+    networks:
+      - local-network
+
+  # PgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: flight-search-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@flightsearch.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres-local
+    networks:
+      - local-network
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: flight-search-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis-local:6379
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis-local
+    networks:
+      - local-network
+
+volumes:
+  postgres_local_data:
+    driver: local
+  redis_local_data:
+    driver: local
+
+networks:
+  local-network:
+    driver: bridge

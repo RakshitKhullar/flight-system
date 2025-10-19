@@ -1,0 +1,112 @@
+# Docker Compose for Testing Environment
+
+version: '3.8'
+
+services:
+  # Test Database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: flight-search-postgres-test
+    environment:
+      POSTGRES_DB: flight_search_test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d flight_search_test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    container_name: flight-search-redis-test
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Test Runner
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: flight-search-test-runner
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/flight_search_test_db
+      SPRING_DATASOURCE_USERNAME: test_user
+      SPRING_DATASOURCE_PASSWORD: test_password
+      SPRING_DATA_REDIS_HOST: redis-test
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./test-results:/app/test-results
+      - ./target:/app/target
+    command: >
+      sh -c "
+        echo 'Waiting for dependencies...' &&
+        sleep 10 &&
+        echo 'Running tests...' &&
+        ./mvnw test -B &&
+        echo 'Tests completed!'
+      "
+
+  # Integration Test Runner
+  integration-test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: flight-search-integration-test
+    environment:
+      SPRING_PROFILES_ACTIVE: test,integration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/flight_search_test_db
+      SPRING_DATASOURCE_USERNAME: test_user
+      SPRING_DATASOURCE_PASSWORD: test_password
+      SPRING_DATA_REDIS_HOST: redis-test
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./test-results:/app/test-results
+      - ./target:/app/target
+    command: >
+      sh -c "
+        echo 'Waiting for dependencies...' &&
+        sleep 15 &&
+        echo 'Running integration tests...' &&
+        ./mvnw test -Dtest='**/*IntegrationTest' -B &&
+        echo 'Integration tests completed!'
+      "
+    profiles:
+      - integration
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge

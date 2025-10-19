@@ -1,0 +1,36 @@
+# Test Dockerfile for running tests in container
+FROM openjdk:17-jdk-slim
+
+# Install curl and test dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Maven wrapper and pom files
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+COPY database-module/pom.xml ./database-module/
+COPY travel-search-service/pom.xml ./travel-search-service/
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY database-module/src ./database-module/src/
+COPY travel-search-service/src ./travel-search-service/src/
+
+# Copy test resources
+COPY travel-search-service/src/test ./travel-search-service/src/test/
+
+# Create test reports directory
+RUN mkdir -p /app/test-results
+
+# Set environment for tests
+ENV SPRING_PROFILES_ACTIVE=test
+
+# Default command runs tests
+CMD ["./mvnw", "test", "-B"]
