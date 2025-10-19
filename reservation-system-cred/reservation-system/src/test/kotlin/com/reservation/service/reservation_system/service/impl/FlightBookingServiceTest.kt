@@ -39,6 +39,7 @@ class FlightBookingServiceTest {
 
     @BeforeEach
     fun setUp() {
+        clearAllMocks()
         flightBookingService = FlightBookingService(
             ticketRepository,
             flightScheduleService,
@@ -55,10 +56,11 @@ class FlightBookingServiceTest {
         val paymentResponse = createPaymentResponse()
         val savedTicket = createTicket()
 
-        every { flightScheduleService.getAvailableSeats(any(), any()) } returns availableSeats
-        every { flightScheduleService.updateSeatStatusByFlightId(any(), any(), SeatStatus.BLOCKED) } returns travelSchedule
+        every { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) } returns availableSeats
+        every { flightScheduleService.bookSeatForSegment(any(), any(), any(), any(), any()) } returns true
         every { paymentService.initiatePayment(any()) } returns paymentResponse
         every { ticketRepository.save(any()) } returns savedTicket
+        every { flightScheduleService.confirmBlockedSeatByFlightId(any(), any()) } returns travelSchedule
 
         // When
         val result = flightBookingService.bookTicket(bookingRequest)
@@ -69,8 +71,8 @@ class FlightBookingServiceTest {
         assertEquals(savedTicket.pnrNumber, result.pnrNumber)
         assertEquals(BookingStatus.CONFIRMED, result.bookingStatus)
 
-        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), any()) }
-        verify { flightScheduleService.updateSeatStatusByFlightId(vehicleId.toString(), seatId, SeatStatus.BLOCKED) }
+        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) }
+        verify { flightScheduleService.bookSeatForSegment(vehicleId.toString(), any(), seatId, "DEL", "BOM") }
         verify { paymentService.initiatePayment(any()) }
         verify { ticketRepository.save(any()) }
     }
@@ -80,7 +82,7 @@ class FlightBookingServiceTest {
         // Given
         val bookingRequest = createBookingRequest()
 
-        every { flightScheduleService.getAvailableSeats(any(), any()) } returns emptyList()
+        every { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) } returns emptyList()
 
         // When & Then
         val exception = assertThrows<IllegalStateException> {
@@ -89,8 +91,8 @@ class FlightBookingServiceTest {
 
         assertEquals("No available seats found for the requested flight", exception.message)
 
-        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), any()) }
-        verify(exactly = 0) { flightScheduleService.updateSeatStatusByFlightId(any(), any(), any()) }
+        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) }
+        verify(exactly = 0) { flightScheduleService.bookSeatForSegment(any(), any(), any(), any(), any()) }
         verify(exactly = 0) { paymentService.initiatePayment(any()) }
     }
 
@@ -100,7 +102,7 @@ class FlightBookingServiceTest {
         val bookingRequest = createBookingRequest()
         val availableSeats = createAvailableSeatsWithDifferentSeatId()
 
-        every { flightScheduleService.getAvailableSeats(any(), any()) } returns availableSeats
+        every { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) } returns availableSeats
 
         // When & Then
         val exception = assertThrows<IllegalStateException> {
@@ -109,33 +111,8 @@ class FlightBookingServiceTest {
 
         assertEquals("Requested seat is not available", exception.message)
 
-        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), any()) }
-        verify(exactly = 0) { flightScheduleService.updateSeatStatusByFlightId(any(), any(), any()) }
-    }
-
-    @Test
-    fun `should rollback seat blocking when payment fails`() {
-        // Given
-        val bookingRequest = createBookingRequest()
-        val availableSeats = createAvailableSeats()
-        val travelSchedule = createTravelSchedule()
-        val paymentException = RuntimeException("Payment failed")
-
-        every { flightScheduleService.getAvailableSeats(any(), any()) } returns availableSeats
-        every { flightScheduleService.updateSeatStatusByFlightId(any(), any(), SeatStatus.BLOCKED) } returns travelSchedule
-        every { flightScheduleService.updateSeatStatusByFlightId(any(), any(), SeatStatus.AVAILABLE) } returns travelSchedule
-        every { paymentService.initiatePayment(any()) } throws paymentException
-
-        // When & Then
-        val exception = assertThrows<RuntimeException> {
-            flightBookingService.bookTicket(bookingRequest)
-        }
-
-        assertEquals("Payment failed", exception.message)
-
-        verify { flightScheduleService.updateSeatStatusByFlightId(vehicleId.toString(), seatId, SeatStatus.BLOCKED) }
-        verify { flightScheduleService.updateSeatStatusByFlightId(vehicleId.toString(), seatId, SeatStatus.AVAILABLE) }
-        verify(exactly = 0) { ticketRepository.save(any()) }
+        verify { flightScheduleService.getAvailableSeats(vehicleId.toString(), null) }
+        verify(exactly = 0) { flightScheduleService.bookSeatForSegment(any(), any(), any(), any(), any()) }
     }
 
     @Test

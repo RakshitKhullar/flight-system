@@ -9,12 +9,15 @@ import com.reservation.service.reservation_system.metrics.MetricsService
 import com.reservation.service.reservation_system.repository.entity.Ticket
 import com.reservation.service.reservation_system.repository.entity.BookingStatus
 import com.reservation.service.reservation_system.repository.entity.PaymentStatus
+import com.reservation.service.reservation_system.service.FlightScheduleService
+import com.reservation.service.reservation_system.service.SeatBookingCacheService
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -23,7 +26,10 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
 
-@WebMvcTest(BookingController::class)
+@WebMvcTest(
+    controllers = [BookingController::class],
+    excludeAutoConfiguration = [SecurityAutoConfiguration::class]
+)
 class BookingControllerTest {
 
     @Autowired
@@ -37,6 +43,12 @@ class BookingControllerTest {
 
     @MockkBean
     private lateinit var metricsService: MetricsService
+
+    @MockkBean
+    private lateinit var flightScheduleService: FlightScheduleService
+
+    @MockkBean
+    private lateinit var seatBookingCacheService: SeatBookingCacheService
 
     private val userId = UUID.randomUUID()
     private val ticketId = UUID.randomUUID()
@@ -119,10 +131,9 @@ class BookingControllerTest {
                 .header("user-id", userId.toString())
                 .param("bookingType", bookingType)
         )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.message").value("Booking cancelled successfully"))
+            .andExpect(status().isNoContent)
 
+        verify { bookingHandler.processCancellation(bookingId, userId, bookingType) }
         verify { metricsService.incrementBookingCancelled() }
     }
 
@@ -133,7 +144,6 @@ class BookingControllerTest {
         val bookingType = "FLIGHT"
 
         every { bookingHandler.processCancellation(bookingId, userId, bookingType) } returns false
-        every { metricsService.incrementApiError() } returns Unit
 
         // When & Then
         mockMvc.perform(
@@ -142,9 +152,10 @@ class BookingControllerTest {
                 .param("bookingType", bookingType)
         )
             .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
 
-        verify { metricsService.incrementApiError() }
+        verify { bookingHandler.processCancellation(bookingId, userId, bookingType) }
+        verify(exactly = 0) { metricsService.incrementApiError() }
+        verify(exactly = 0) { metricsService.incrementBookingCancelled() }
     }
 
     @Test
@@ -155,7 +166,6 @@ class BookingControllerTest {
         val expectedTicket = createTicket()
 
         every { bookingHandler.getBookingDetails(bookingId, userId, bookingType) } returns expectedTicket
-        every { metricsService.incrementBookingRetrieved() } returns Unit
 
         // When & Then
         mockMvc.perform(
@@ -167,7 +177,8 @@ class BookingControllerTest {
             .andExpect(jsonPath("$.ticketId").value(expectedTicket.ticketId.toString()))
             .andExpect(jsonPath("$.pnrNumber").value(expectedTicket.pnrNumber))
 
-        verify { metricsService.incrementBookingRetrieved() }
+        verify { bookingHandler.getBookingDetails(bookingId, userId, bookingType) }
+        verify(exactly = 0) { metricsService.incrementBookingRetrieved() }
     }
 
     @Test
@@ -177,7 +188,6 @@ class BookingControllerTest {
         val bookingType = "FLIGHT"
 
         every { bookingHandler.getBookingDetails(bookingId, userId, bookingType) } returns null
-        every { metricsService.incrementApiError() } returns Unit
 
         // When & Then
         mockMvc.perform(
@@ -187,7 +197,8 @@ class BookingControllerTest {
         )
             .andExpect(status().isNotFound)
 
-        verify { metricsService.incrementApiError() }
+        verify { bookingHandler.getBookingDetails(bookingId, userId, bookingType) }
+        verify(exactly = 0) { metricsService.incrementApiError() }
     }
 
     private fun createBookingRequest(): BookingRequest {

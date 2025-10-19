@@ -10,9 +10,11 @@ import com.reservation.service.reservation_system.repository.entity.cassandra.Se
 import com.reservation.service.reservation_system.repository.entity.cassandra.SeatStatus
 import com.reservation.service.reservation_system.service.impl.FlightBookingService
 import io.mockk.*
+import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
@@ -20,21 +22,23 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@ExtendWith(MockKExtension::class)
 class FlightBookingServiceTest {
 
     private val ticketRepository = mockk<TicketRepository>()
     private val flightScheduleService = mockk<FlightScheduleService>()
     private val paymentService = mockk<PaymentService>()
     
-    private val flightBookingService = FlightBookingService(
-        ticketRepository,
-        flightScheduleService,
-        paymentService
-    )
+    private lateinit var flightBookingService: FlightBookingService
 
     @BeforeEach
     fun setUp() {
         clearAllMocks()
+        flightBookingService = FlightBookingService(
+            ticketRepository,
+            flightScheduleService,
+            paymentService
+        )
     }
 
     @Test

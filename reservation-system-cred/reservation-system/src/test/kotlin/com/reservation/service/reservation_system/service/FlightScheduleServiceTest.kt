@@ -188,23 +188,23 @@ class FlightScheduleServiceTest {
     @Test
     fun `should handle overlapping segment detection correctly`() {
         // Given - Create segments that should overlap
-        val mockSchedules = createMockSchedulesWithOverlappingSegments()
-        every { travelScheduleStore.findByFlightId("AI101") } returns mockSchedules
-
         val seatId = UUID.randomUUID()
         val date = LocalDate.now()
-
-        // When - Try to book overlapping segments
-        every { travelScheduleStore.save(any()) } returns mockSchedules.first()
+        val mockSchedules = createMockSchedulesWithOverlappingSegments(seatId)
         
+        every { travelScheduleStore.findByFlightId("AI101") } returns mockSchedules
+        every { travelScheduleStore.save(any()) } returns mockSchedules.first()
+
+        // When - Try to book the full route first (DEL -> BLR)
         val result1 = flightScheduleService.bookSeatForSegment(
             "AI101", date, seatId, "DEL", "BLR" // Full route
         )
         
-        // Update mock to return booked seats
+        // Update mock to return schedules with the seat already booked for DEL->BLR
         val bookedSchedules = createMockSchedulesWithBookedSeats(seatId)
         every { travelScheduleStore.findByFlightId("AI101") } returns bookedSchedules
         
+        // Try to book an overlapping segment (BOM -> BLR)
         val result2 = flightScheduleService.bookSeatForSegment(
             "AI101", date, seatId, "BOM", "BLR" // Overlapping segment
         )
@@ -212,6 +212,10 @@ class FlightScheduleServiceTest {
         // Then
         assertTrue(result1) // First booking should succeed
         assertFalse(result2) // Second booking should fail due to overlap
+        
+        // Verify the correct methods were called
+        verify(atLeast = 1) { travelScheduleStore.findByFlightId("AI101") }
+        verify(atLeast = 1) { travelScheduleStore.save(any()) }
     }
 
     // Helper methods
@@ -350,7 +354,7 @@ class FlightScheduleServiceTest {
     }
 
     private fun createMockSchedulesWithBookedSeats(seatId: UUID): List<TravelSchedule> {
-        val seatInfo = SeatInfo(
+        val bookedSeatInfo = SeatInfo(
             seatId = seatId,
             seatNumber = "1A",
             seatClass = SeatClass.BUSINESS,
@@ -358,31 +362,75 @@ class FlightScheduleServiceTest {
             seatStatus = SeatStatus.BOOKED
         )
 
-        val scheduleItem = ScheduleItem(
-            date = LocalDate.now(),
-            flightNumber = "AI101",
-            sourceCode = "DEL",
-            destinationCode = "BOM",
-            travelStartTime = LocalTime.of(6, 0),
-            travelEndTime = LocalTime.of(7, 30),
-            seats = listOf(seatInfo),
-            totalSeats = 1,
-            availableSeats = 0,
-            numberOfStops = 0,
-            stops = emptyList(),
-            isDirect = true
+        val stop = FlightStop(
+            airportCode = "BOM",
+            airportName = "Mumbai Airport",
+            city = "Mumbai",
+            arrivalTime = LocalTime.of(7, 30),
+            departureTime = LocalTime.of(8, 15),
+            layoverDuration = 45,
+            stopSequence = 1
+        )
+
+        val scheduleItems = listOf(
+            // DEL -> BOM (seat already booked)
+            ScheduleItem(
+                date = LocalDate.now(),
+                flightNumber = "AI101",
+                sourceCode = "DEL",
+                destinationCode = "BOM",
+                travelStartTime = LocalTime.of(6, 0),
+                travelEndTime = LocalTime.of(7, 30),
+                seats = listOf(bookedSeatInfo.copy()),
+                totalSeats = 1,
+                availableSeats = 0,
+                numberOfStops = 0,
+                stops = emptyList(),
+                isDirect = true
+            ),
+            // DEL -> BLR (seat already booked for full route)
+            ScheduleItem(
+                date = LocalDate.now(),
+                flightNumber = "AI101",
+                sourceCode = "DEL",
+                destinationCode = "BLR",
+                travelStartTime = LocalTime.of(6, 0),
+                travelEndTime = LocalTime.of(10, 30),
+                seats = listOf(bookedSeatInfo.copy()),
+                totalSeats = 1,
+                availableSeats = 0,
+                numberOfStops = 1,
+                stops = listOf(stop),
+                isDirect = false
+            ),
+            // BOM -> BLR (seat should be unavailable due to overlap)
+            ScheduleItem(
+                date = LocalDate.now(),
+                flightNumber = "AI101",
+                sourceCode = "BOM",
+                destinationCode = "BLR",
+                travelStartTime = LocalTime.of(8, 15),
+                travelEndTime = LocalTime.of(10, 30),
+                seats = listOf(bookedSeatInfo.copy()),
+                totalSeats = 1,
+                availableSeats = 0,
+                numberOfStops = 0,
+                stops = emptyList(),
+                isDirect = true
+            )
         )
 
         return listOf(
             TravelSchedule(
                 vehicleId = "AI101",
-                schedule = listOf(scheduleItem)
+                schedule = scheduleItems
             )
         )
     }
 
-    private fun createMockSchedulesWithOverlappingSegments(): List<TravelSchedule> {
+    private fun createMockSchedulesWithOverlappingSegments(seatId: UUID): List<TravelSchedule> {
         val seatInfo = SeatInfo(
+            seatId = seatId,
             seatNumber = "1A",
             seatClass = SeatClass.BUSINESS,
             amount = BigDecimal("15000.00"),

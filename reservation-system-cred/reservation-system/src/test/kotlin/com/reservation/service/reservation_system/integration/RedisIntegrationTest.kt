@@ -5,7 +5,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest
+import org.springframework.context.annotation.Import
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -17,7 +18,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@SpringBootTest
+@DataRedisTest
+@Import(SeatBookingCacheService::class)
 @ActiveProfiles("test")
 class RedisIntegrationTest {
 
@@ -255,4 +257,5 @@ class RedisIntegrationTest {
         assertEquals("BLOCKED", rawValue)
         assertTrue(seatBookingCacheService.isSeatBookingInProgress(testSeatKey))
     }
+
 }

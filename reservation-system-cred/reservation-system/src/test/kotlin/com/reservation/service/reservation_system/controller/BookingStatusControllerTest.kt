@@ -31,8 +31,8 @@ class BookingStatusControllerTest {
     private lateinit var seatKeyService: SeatKeyService
 
     private val flightId = "FL123"
-    private val seatId = UUID.randomUUID()
-    private val flightTime = "10:30"
+    private val seatId = UUID.fromString("7ecb0897-2196-4199-8953-13de19b84001")
+    private val flightTime = "1030"  // Changed to avoid colon in time
     private val seatKey = "$flightId:$seatId:$flightTime"
 
     @Test

@@ -5,7 +5,6 @@ import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import java.time.Duration
@@ -18,11 +17,8 @@ import kotlin.test.assertTrue
 @ExtendWith(MockKExtension::class)
 class SeatBookingCacheServiceTest {
 
-    @Mock
-    private lateinit var redisTemplate: RedisTemplate<String, String>
-    
-    @Mock
-    private lateinit var valueOperations: ValueOperations<String, String>
+    private val redisTemplate = mockk<RedisTemplate<String, String>>()
+    private val valueOperations = mockk<ValueOperations<String, String>>()
 
     private lateinit var seatBookingCacheService: SeatBookingCacheService
 
@@ -34,7 +30,7 @@ class SeatBookingCacheServiceTest {
 
     @BeforeEach
     fun setUp() {
-        MockKAnnotations.init(this)
+        clearAllMocks()
         every { redisTemplate.opsForValue() } returns valueOperations
         seatBookingCacheService = SeatBookingCacheService(redisTemplate)
     }
@@ -237,7 +233,7 @@ class SeatBookingCacheServiceTest {
     @Test
     fun `should handle null TTL response`() {
         // Given
-        every { redisTemplate.getExpire(redisKey) } returns 1L
+        every { redisTemplate.getExpire(redisKey) } returns -1L
 
         // When
         val result = seatBookingCacheService.getSeatBookingTTL(seatKey)
