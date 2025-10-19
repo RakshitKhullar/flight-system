@@ -580,9 +580,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [API Documentation](docs/API.md)
 
 ### Contact
-- **GitHub Issues**: [Create an Issue](https://github.com/RakshitKhullar/flight-system/issues)
 - **Email**: rakshitkhullar1331@gmail.com
-- **LinkedIn**: [Your LinkedIn Profile](https://linkedin.com/in/your-profile)
 
 ---
 
