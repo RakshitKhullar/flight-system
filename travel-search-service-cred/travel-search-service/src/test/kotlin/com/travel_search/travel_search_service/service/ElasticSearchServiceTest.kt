@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -60,8 +61,14 @@ class ElasticSearchServiceTest {
     @Test
     fun `should add new flight data when no existing flight found`() {
         // Given
-        whenever(elasticSearchRepository.findByFlightIdAndCriteria(any(), any(), any(), any(), any(), any()))
-            .thenReturn(null)
+        whenever(elasticSearchRepository.findByFlightIdAndCriteria(
+            eq("AI101"), 
+            eq("Delhi"), 
+            eq("Mumbai"), 
+            any(), 
+            eq(0), 
+            eq("Air India")
+        )).thenReturn(null)
         whenever(elasticSearchRepository.save(any<ElasticSearch>()))
             .thenReturn(sampleElasticSearch)
 
@@ -190,8 +197,14 @@ class ElasticSearchServiceTest {
     fun `should handle null departner correctly`() {
         // Given
         val requestWithNullDepartner = sampleRequest.copy(departner = null)
-        whenever(elasticSearchRepository.findByFlightIdAndCriteria(any(), any(), any(), any(), any(), any()))
-            .thenReturn(null)
+        whenever(elasticSearchRepository.findByFlightIdAndCriteria(
+            eq("AI101"), 
+            eq("Delhi"), 
+            eq("Mumbai"), 
+            any(), 
+            eq(0), 
+            eq(null)
+        )).thenReturn(null)
         whenever(elasticSearchRepository.save(any<ElasticSearch>()))
             .thenReturn(sampleElasticSearch.copy(departner = null))
 

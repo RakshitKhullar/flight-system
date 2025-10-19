@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.data.redis.core.RedisTemplate
 import java.time.LocalDate
@@ -73,8 +74,13 @@ class FlightSearchServiceTest {
             sortBy = SortBy.PRICE
         )
 
-        whenever(elasticSearchRepository.findFlightsBySearchCriteria(any(), any(), any(), any(), any()))
-            .thenReturn(sampleFlights)
+        whenever(elasticSearchRepository.findFlightsBySearchCriteria(
+            eq("Delhi"),
+            eq("Mumbai"),
+            any(),
+            eq("Air India"),
+            eq(1)
+        )).thenReturn(sampleFlights)
 
         // When
         val result = flightSearchService.searchFlights(request)
@@ -88,7 +94,7 @@ class FlightSearchServiceTest {
         
         // Verify flight details
         val firstFlight = result.flights[0]
-        assertEquals("AI101", firstFlight.flightId)
+        assertEquals("6E202", firstFlight.flightId)
         assertEquals("Delhi", firstFlight.src)
         assertEquals("Mumbai", firstFlight.destination)
     }
@@ -105,8 +111,13 @@ class FlightSearchServiceTest {
             sortBy = SortBy.PRICE
         )
 
-        whenever(elasticSearchRepository.findFlightsBySearchCriteria(any(), any(), any(), any(), any()))
-            .thenReturn(emptyList())
+        whenever(elasticSearchRepository.findFlightsBySearchCriteria(
+            eq("Delhi"),
+            eq("Chennai"), 
+            any(),
+            eq(null),
+            eq(0)
+        )).thenReturn(emptyList())
 
         // When
         val result = flightSearchService.searchFlights(request)
@@ -183,8 +194,13 @@ class FlightSearchServiceTest {
             sortBy = SortBy.PRICE
         )
 
-        whenever(elasticSearchRepository.findFlightsBySearchCriteria(any(), any(), any(), any(), any()))
-            .thenReturn(sampleFlights)
+        whenever(elasticSearchRepository.findFlightsBySearchCriteria(
+            eq("Delhi"),
+            eq("Mumbai"),
+            any(),
+            eq(null),
+            eq(1)
+        )).thenReturn(sampleFlights)
 
         // When
         val result = flightSearchService.searchFlights(request)
@@ -208,8 +224,13 @@ class FlightSearchServiceTest {
             sortBy = SortBy.STOPS
         )
 
-        whenever(elasticSearchRepository.findFlightsBySearchCriteria(any(), any(), any(), any(), any()))
-            .thenReturn(sampleFlights)
+        whenever(elasticSearchRepository.findFlightsBySearchCriteria(
+            eq("Delhi"),
+            eq("Mumbai"),
+            any(),
+            eq(null),
+            eq(1)
+        )).thenReturn(sampleFlights)
 
         // When
         val result = flightSearchService.searchFlights(request)

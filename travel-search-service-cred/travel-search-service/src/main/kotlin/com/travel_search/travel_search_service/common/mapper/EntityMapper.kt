@@ -85,7 +85,7 @@ object EntityMapper {
     }
     
     private fun generateFlightNumber(airline: String?): String {
-        val prefix = airline?.take(2)?.uppercase() ?: "UK"
+        val prefix = if (airline.isNullOrBlank()) "UK" else airline.take(2).uppercase()
         return "$prefix${(1000..9999).random()}"
     }
 }

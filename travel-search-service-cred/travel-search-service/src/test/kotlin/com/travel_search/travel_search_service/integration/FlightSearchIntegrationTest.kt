@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.travel_search.travel_search_service.config.TestConfig
 import com.travel_search.travel_search_service.dto.ElasticSearchRequest
 import com.travel_search.travel_search_service.repository.ElasticSearchRepository
+import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,8 +22,6 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.WebApplicationContext
 import redis.embedded.RedisServer
 import java.time.LocalDate
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebMvc

@@ -11,12 +11,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import org.springframework.data.redis.connection.RedisConnection
-import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import java.time.LocalDate
-import java.util.concurrent.TimeUnit
 
 @ExtendWith(MockitoExtension::class)
 class CacheServiceTest {
@@ -26,12 +23,6 @@ class CacheServiceTest {
 
     @Mock
     private lateinit var valueOperations: ValueOperations<String, Any>
-
-    @Mock
-    private lateinit var redisConnectionFactory: RedisConnectionFactory
-
-    @Mock
-    private lateinit var redisConnection: RedisConnection
 
     private lateinit var cacheService: CacheService
 
@@ -57,14 +48,13 @@ class CacheServiceTest {
             currentPage = 1,
             totalPages = 1
         )
-        
-        whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
-        whenever(redisTemplate.connectionFactory).thenReturn(redisConnectionFactory)
-        whenever(redisConnectionFactory.connection).thenReturn(redisConnection)
     }
 
     @Test
     fun `should cache flight search response`() {
+        // Given
+        whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
+        
         // When
         cacheService.cacheFlightSearch(sampleRequest, sampleResponse)
 
@@ -79,6 +69,7 @@ class CacheServiceTest {
     @Test
     fun `should retrieve cached flight search response`() {
         // Given
+        whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
         whenever(valueOperations.get(any<String>())).thenReturn(sampleResponse)
 
         // When
@@ -93,6 +84,7 @@ class CacheServiceTest {
     @Test
     fun `should return null when no cached data found`() {
         // Given
+        whenever(redisTemplate.opsForValue()).thenReturn(valueOperations)
         whenever(valueOperations.get(any<String>())).thenReturn(null)
 
         // When
