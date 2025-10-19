@@ -5,6 +5,8 @@ import com.travel_search.travel_search_service.repository.entity.ElasticSearch
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.test.context.ActiveProfiles
@@ -13,6 +15,7 @@ import java.time.ZonedDateTime
 
 @DataJpaTest
 @ActiveProfiles("test")
+@ExtendWith(MockitoExtension::class)
 class ElasticSearchRepositoryTest {
 
     @Autowired

@@ -6,9 +6,12 @@ import com.travel_search.travel_search_service.repository.entity.ElasticSearch
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
+@ExtendWith(MockitoExtension::class)
 class EntityMapperTest {
 
     private lateinit var sampleRequest: ElasticSearchRequest

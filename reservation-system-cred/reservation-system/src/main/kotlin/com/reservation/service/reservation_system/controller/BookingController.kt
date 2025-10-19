@@ -6,6 +6,7 @@ import com.reservation.service.reservation_system.handler.BookingHandler
 import com.reservation.service.reservation_system.repository.entity.Ticket
 import com.reservation.service.reservation_system.metrics.MetricsService
 import com.reservation.service.reservation_system.service.FlightScheduleService
+import com.reservation.service.reservation_system.service.SeatBookingCacheService
 import jakarta.validation.Valid
 import kotlinx.coroutines.runBlocking
 import org.springframework.http.HttpStatus
@@ -19,7 +20,8 @@ import java.util.UUID
 class BookingController(
     private val bookingHandler: BookingHandler,
     private val metricsService: MetricsService,
-    private val flightScheduleService: FlightScheduleService
+    private val flightScheduleService: FlightScheduleService,
+    private val seatBookingCacheService: SeatBookingCacheService
 ) {
 
     @PostMapping
@@ -304,6 +306,52 @@ class BookingController(
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "Failed to fetch segments", "message" to e.message))
+        }
+    }
+
+    // Redis health check endpoint
+    @GetMapping("/cache/health")
+    fun getCacheHealth(): ResponseEntity<Any> {
+        return try {
+            val isConnected = seatBookingCacheService.getRedisConnectionStatus()
+            val blockedSeatsCount = seatBookingCacheService.getAllBlockedSeats().size
+            
+            ResponseEntity.ok(mapOf(
+                "redis_connected" to isConnected,
+                "blocked_seats_count" to blockedSeatsCount,
+                "status" to if (isConnected) "healthy" else "unhealthy",
+                "timestamp" to System.currentTimeMillis()
+            ))
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(mapOf(
+                    "redis_connected" to false,
+                    "status" to "unhealthy",
+                    "error" to e.message,
+                    "timestamp" to System.currentTimeMillis()
+                ))
+        }
+    }
+
+    // Clear all blocked seats (admin only)
+    @DeleteMapping("/cache/blocked-seats")
+    fun clearAllBlockedSeats(
+        @RequestHeader("admin-id") adminId: UUID
+    ): ResponseEntity<Any> {
+        return try {
+            val beforeCount = seatBookingCacheService.getAllBlockedSeats().size
+            seatBookingCacheService.clearAllBlockedSeats()
+            val afterCount = seatBookingCacheService.getAllBlockedSeats().size
+            
+            ResponseEntity.ok(mapOf(
+                "message" to "Cleared all blocked seats",
+                "seats_cleared" to (beforeCount - afterCount),
+                "admin_id" to adminId,
+                "timestamp" to System.currentTimeMillis()
+            ))
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "Failed to clear blocked seats", "message" to e.message))
         }
     }
 }

@@ -4,8 +4,11 @@ import com.travel_search.travel_search_service.dto.FlightSearchRequest
 import com.travel_search.travel_search_service.dto.SortBy
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDate
 
+@ExtendWith(MockitoExtension::class)
 class CacheKeyGeneratorTest {
 
     @Test
